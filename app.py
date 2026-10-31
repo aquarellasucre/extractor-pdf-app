@@ -14,7 +14,6 @@ st.markdown("Sube un PDF para extraer sus imágenes, previsualizarlas y descarga
 archivo_subido = st.file_uploader("Selecciona un archivo PDF", type=["pdf"])
 
 if archivo_subido is not None:
-    # Guardar temporalmente el PDF subido
     nombre_pdf = archivo_subido.name
     ruta_pdf = os.path.join("/tmp", nombre_pdf)
     with open(ruta_pdf, "wb") as f:
@@ -95,15 +94,14 @@ if archivo_subido is not None:
         with col2:
             st.markdown("### Opciones de Descarga Personalizada")
             
-            # Campo para nombre personalizado conservando la extensión original
+            # Campo para nombre personalizado
             nombre_sugerido = f"imagen_pag_{r['pagina']}"
             nombre_personalizado = st.text_input("Nombre para el archivo descargado (sin extensión):", value=nombre_sugerido)
             
-            # Limpiar nombre por seguridad (reemplazar espacios o caracteres extraños si deseas)
             nombre_final = nombre_personalizado.strip() if nombre_personalizado else "imagen"
-            nombre_con_extension = f"{nombre_final}.{r['extension']}"
 
-            # 1. Descargar original con nombre personalizado
+            # 1. Botón directo para descargar en formato original
+            nombre_con_extension = f"{nombre_final}.{r['extension']}"
             with open(r["ruta"], "rb") as file_original:
                 st.download_button(
                     label=f"📥 Descargar Original ({r['extension'].upper()})",
@@ -113,9 +111,9 @@ if archivo_subido is not None:
                     use_container_width=True
                 )
 
-            # 2. Convertir y descargar a JPG (fondo blanco) con nombre personalizado
-            if st.button("🖼️ Convertir a JPG (Fondo blanco, calidad 90)", use_container_width=True):
-                destino_jpg = f"/tmp/{nombre_final}.jpg"
+            # 2. Generar y descargar directamente a JPG (con fondo blanco) de forma optimizada
+            destino_jpg = f"/tmp/{nombre_final}.jpg"
+            try:
                 with Image.open(r["ruta"]) as img:
                     img = ImageOps.exif_transpose(img).convert("RGBA")
                     fondo = Image.new("RGBA", img.size, (255, 255, 255, 255))
@@ -124,12 +122,14 @@ if archivo_subido is not None:
                 
                 with open(destino_jpg, "rb") as file_jpg:
                     st.download_button(
-                        label="⬇️ Click aquí para descargar el JPG generado",
+                        label="🖼️ Descargar como JPG (Fondo blanco, calidad 90)",
                         data=file_jpg,
                         file_name=f"{nombre_final}.jpg",
                         mime="image/jpeg",
                         use_container_width=True
                     )
+            except Exception as ex:
+                st.error(f"No se pudo preparar la versión JPG: {ex}")
 
         st.markdown("---")
         
