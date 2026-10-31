@@ -10,11 +10,26 @@ st.set_page_config(page_title="Extractor de Imágenes de PDF", page_icon="🖼�
 st.title("🖼️ Extractor de Imágenes Originales de PDF")
 st.markdown("Extrae las imágenes **originales** tal cual están dentro del PDF, previsualízalas y descárgalas individualmente o en ZIP.")
 
+# Función optimizada con caché para que la conversión a JPEG sea instantánea
+@st.cache_data
+def convertir_a_jpeg_optimizado(image_bytes):
+    try:
+        img_to_convert = Image.open(io.BytesIO(image_bytes))
+        img_to_convert = ImageOps.exif_transpose(img_to_convert).convert("RGBA")
+        fondo = Image.new("RGBA", img_to_convert.size, (255, 255, 255, 255))
+        fondo.alpha_composite(img_to_convert)
+        
+        buffer_jpeg = io.BytesIO()
+        fondo.convert("RGB").save(buffer_jpeg, "JPEG", quality=100, optimize=True, progressive=True)
+        return buffer_jpeg.getvalue()
+    except Exception:
+        return None
+
 # Subir archivo PDF
 archivo_subido = st.file_uploader("Selecciona un archivo PDF", type=["pdf"])
 
 if archivo_subido is not None:
-    # Procesar el PDF una sola vez y guardarlo en session_state para evitar lentitud
+    # Procesar el PDF una sola vez y guardarlo en session_state
     if "current_pdf" not in st.session_state or st.session_state.get("pdf_name") != archivo_subido.name:
         with st.spinner("Extrayendo imágenes originales del PDF..."):
             ruta_pdf = os.path.join("/tmp", archivo_subido.name)
@@ -32,7 +47,6 @@ if archivo_subido is not None:
                         continue
                     xrefs.add(xref)
                     try:
-                        # Extracción pura y directa del stream original del PDF
                         datos = doc.extract_image(xref)
                         if not datos or "image" not in datos:
                             continue
@@ -64,7 +78,7 @@ if archivo_subido is not None:
     else:
         st.success(f"¡Extracción exitosa! Se encontraron {len(image_records)} imágenes originales.")
 
-        # Selector de imágenes limpio mostrando solo datos reales
+        # Selector de imágenes limpio
         opciones = [
             (i, f"Página {r['pagina']} — Imagen {i+1} ({r['ancho']}×{r['alto']} px) — Formato: {r['extension'].upper()}")
             for i, r in enumerate(image_records)
@@ -96,7 +110,7 @@ if archivo_subido is not None:
             if "nombre_fijado" not in st.session_state:
                 st.session_state["nombre_fijado"] = sugerencia_inicial
 
-            # Formulario rápido para fijar nombre a la primera
+            # Formulario rápido para fijar nombre
             with st.form(key=f"form_nombre_{seleccion_idx}"):
                 nombre_input = st.text_input("Nombre para el archivo (sin extensión):", value=st.session_state["nombre_fijado"])
                 actualizar = st.form_submit_button("💾 Fijar este nombre")
@@ -106,7 +120,7 @@ if archivo_subido is not None:
             nombre_final = st.session_state["nombre_fijado"].strip() if st.session_state["nombre_fijado"] else "imagen"
             st.info(f"Nombre activo: **{nombre_final}**")
 
-            # Camino 1: Descargar el archivo ORIGINAL con su extensión original del PDF
+            # Camino 1: Descargar el archivo ORIGINAL
             nombre_con_extension = f"{nombre_final}.{r['extension']}"
             st.download_button(
                 label=f"📥 1. Descargar Original ({r['extension'].upper()})",
@@ -116,17 +130,9 @@ if archivo_subido is not None:
                 use_container_width=True
             )
 
-            # Camino 2: Convertir a JPEG con fondo blanco y calidad 100 bajo demanda
-            try:
-                img_to_convert = Image.open(io.BytesIO(r["bytes"]))
-                img_to_convert = ImageOps.exif_transpose(img_to_convert).convert("RGBA")
-                fondo = Image.new("RGBA", img_to_convert.size, (255, 255, 255, 255))
-                fondo.alpha_composite(img_to_convert)
-                
-                buffer_jpeg = io.BytesIO()
-                fondo.convert("RGB").save(buffer_jpeg, "JPEG", quality=100, optimize=True, progressive=True)
-                jpeg_bytes = buffer_jpeg.getvalue()
-
+            # Camino 2: Descargar como JPEG con caché (Ultra rápido)
+            jpeg_bytes = convertir_a_jpeg_optimizado(r["bytes"])
+            if jpeg_bytes:
                 st.download_button(
                     label="🖼️ 2. Descargar como JPEG (Fondo blanco, calidad 100)",
                     data=jpeg_bytes,
@@ -134,12 +140,12 @@ if archivo_subido is not None:
                     mime="image/jpeg",
                     use_container_width=True
                 )
-            except Exception as ex:
-                st.error(f"No se pudo preparar la versión JPEG: {ex}")
+            else:
+                st.error("No se pudo preparar la versión JPEG.")
 
         st.markdown("---")
         
-        # Camino 3: Descargar todas las imágenes originales en un ZIP
+        # Camino 3: Descargar todas en ZIP
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
             for idx, rec in enumerate(image_records, 1):
