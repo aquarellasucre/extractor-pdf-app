@@ -94,11 +94,16 @@ if archivo_subido is not None:
         with col2:
             st.markdown("### Opciones de Descarga Personalizada")
             
-            # Campo para nombre personalizado
+            # Campo para nombre personalizado con persistencia inmediata en la sesión
             nombre_sugerido = f"imagen_pag_{r['pagina']}"
-            nombre_personalizado = st.text_input("Nombre para el archivo descargado (sin extensión):", value=nombre_sugerido)
             
-            nombre_final = nombre_personalizado.strip() if nombre_personalizado else "imagen"
+            if "nombre_personalizado" not in st.session_state:
+                st.session_state["nombre_personalizado"] = nombre_sugerido
+
+            nombre_input = st.text_input("Nombre para el archivo descargado (sin extensión):", value=st.session_state["nombre_personalizado"])
+            st.session_state["nombre_personalizado"] = nombre_input
+
+            nombre_final = nombre_input.strip() if nombre_input else "imagen"
 
             # 1. Botón directo para descargar en formato original
             nombre_con_extension = f"{nombre_final}.{r['extension']}"
@@ -111,7 +116,7 @@ if archivo_subido is not None:
                     use_container_width=True
                 )
 
-            # 2. Generar y descargar directamente a JPG (con fondo blanco) de forma optimizada
+            # 2. Descargar directamente a JPG (con fondo blanco y calidad 100)
             destino_jpg = f"/tmp/{nombre_final}.jpg"
             try:
                 with Image.open(r["ruta"]) as img:
