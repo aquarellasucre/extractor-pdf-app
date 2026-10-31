@@ -1,2 +1,2 @@
-pymupdf
+PyMuPDF==1.24.10
 streamlit
