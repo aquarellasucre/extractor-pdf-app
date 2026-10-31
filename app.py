@@ -94,16 +94,20 @@ if archivo_subido is not None:
         with col2:
             st.markdown("### Opciones de Descarga Personalizada")
             
-            # Campo para nombre personalizado con persistencia inmediata en la sesión
-            nombre_sugerido = f"imagen_pag_{r['pagina']}"
-            
-            if "nombre_personalizado" not in st.session_state:
-                st.session_state["nombre_personalizado"] = nombre_sugerido
+            # Inicializar estado del nombre personalizado si cambia de imagen
+            sugerencia_inicial = f"imagen_pag_{r['pagina']}"
+            if "nombre_fijado" not in st.session_state:
+                st.session_state["nombre_fijado"] = sugerencia_inicial
 
-            nombre_input = st.text_input("Nombre para el archivo descargado (sin extensión):", value=st.session_state["nombre_personalizado"])
-            st.session_state["nombre_personalizado"] = nombre_input
+            # Usamos un formulario para asegurar que el nombre se guarde a la primera
+            with st.form(key=f"form_nombre_{seleccion_idx}"):
+                nombre_input = st.text_input("Nombre para el archivo (sin extensión):", value=st.session_state["nombre_fijado"])
+                actualizar = st.form_submit_button("💾 Fijar este nombre")
+                if actualizar:
+                    st.session_state["nombre_fijado"] = nombre_input
 
-            nombre_final = nombre_input.strip() if nombre_input else "imagen"
+            nombre_final = st.session_state["nombre_fijado"].strip() if st.session_state["nombre_fijado"] else "imagen"
+            st.info(f"Nombre activo para descarga: **{nombre_final}**")
 
             # 1. Botón directo para descargar en formato original
             nombre_con_extension = f"{nombre_final}.{r['extension']}"
