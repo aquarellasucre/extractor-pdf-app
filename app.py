@@ -69,7 +69,6 @@ if archivo_subido is not None:
             
             st.session_state["image_records"] = image_records
             st.session_state["pdf_name"] = archivo_subido.name
-            st.session_state.pop("nombre_fijado_activo", None)
 
     image_records = st.session_state.get("image_records", [])
 
@@ -114,7 +113,7 @@ if archivo_subido is not None:
             if key_fijado not in st.session_state:
                 st.session_state[key_fijado] = f"imagen_pag_{r['pagina']}"
 
-            # Caja de texto y botón de fijar fuera de un st.form
+            # Caja de texto y botón de fijar
             nombre_input = st.text_input("Nombre para el archivo (sin extensión):", key=key_input)
             
             if st.button("💾 Fijar este nombre", use_container_width=True):
@@ -151,4 +150,14 @@ if archivo_subido is not None:
         
         # 3. Camino 3: Descargar todas en ZIP
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DE
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for idx, rec in enumerate(image_records, 1):
+                zf.writestr(f"imagen_{idx:04d}.{rec['extension']}", rec["bytes"])
+        
+        st.download_button(
+            label="📦 3. Descargar todas las imágenes originales en un archivo ZIP",
+            data=zip_buffer.getvalue(),
+            file_name="imagenes_originales_pdf.zip",
+            mime="application/zip",
+            use_container_width=True
+        )
