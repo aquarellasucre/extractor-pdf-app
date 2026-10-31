@@ -118,11 +118,11 @@ if archivo_subido is not None:
                     img = ImageOps.exif_transpose(img).convert("RGBA")
                     fondo = Image.new("RGBA", img.size, (255, 255, 255, 255))
                     fondo.alpha_composite(img)
-                    fondo.convert("RGB").save(destino_jpg, "JPEG", quality=90, optimize=True, progressive=True)
+                    fondo.convert("RGB").save(destino_jpg, "JPEG", quality=100, optimize=True, progressive=True)
                 
                 with open(destino_jpg, "rb") as file_jpg:
                     st.download_button(
-                        label="🖼️ Descargar como JPG (Fondo blanco, calidad 90)",
+                        label="🖼️ Descargar como JPG (Fondo blanco, calidad 100)",
                         data=file_jpg,
                         file_name=f"{nombre_final}.jpg",
                         mime="image/jpeg",
