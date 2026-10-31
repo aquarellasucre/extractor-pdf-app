@@ -8,7 +8,7 @@ from PIL import Image, ImageOps
 st.set_page_config(page_title="Extractor de Imágenes de PDF", page_icon="🖼️", layout="wide")
 
 st.title("🖼️ Extractor de Imágenes Originales de PDF")
-st.markdown("Sube un PDF para extraer sus imágenes, previsualizarlas y descargarlas individualmente, en ZIP o convertirlas a JPG.")
+st.markdown("Sube un PDF para extraer sus imágenes, previsualizarlas y descargarlas individualmente, en ZIP o convertirlas a JPEG.")
 
 # Subir archivo PDF
 archivo_subido = st.file_uploader("Selecciona un archivo PDF", type=["pdf"])
@@ -99,7 +99,7 @@ if archivo_subido is not None:
             if "nombre_fijado" not in st.session_state:
                 st.session_state["nombre_fijado"] = sugerencia_inicial
 
-            # Usamos un formulario para asegurar que el nombre se guarde a la primera
+            # Formulario para fijar nombre a la primera
             with st.form(key=f"form_nombre_{seleccion_idx}"):
                 nombre_input = st.text_input("Nombre para el archivo (sin extensión):", value=st.session_state["nombre_fijado"])
                 actualizar = st.form_submit_button("💾 Fijar este nombre")
@@ -120,25 +120,25 @@ if archivo_subido is not None:
                     use_container_width=True
                 )
 
-            # 2. Descargar directamente a JPG (con fondo blanco y calidad 100)
-            destino_jpg = f"/tmp/{nombre_final}.jpg"
+            # 2. Descargar directamente a JPEG (con fondo blanco y calidad 100)
+            destino_jpeg = f"/tmp/{nombre_final}.jpeg"
             try:
                 with Image.open(r["ruta"]) as img:
                     img = ImageOps.exif_transpose(img).convert("RGBA")
                     fondo = Image.new("RGBA", img.size, (255, 255, 255, 255))
                     fondo.alpha_composite(img)
-                    fondo.convert("RGB").save(destino_jpg, "JPEG", quality=100, optimize=True, progressive=True)
+                    fondo.convert("RGB").save(destino_jpeg, "JPEG", quality=100, optimize=True, progressive=True)
                 
-                with open(destino_jpg, "rb") as file_jpg:
+                with open(destino_jpeg, "rb") as file_jpeg:
                     st.download_button(
-                        label="🖼️ Descargar como JPG (Fondo blanco, calidad 100)",
-                        data=file_jpg,
-                        file_name=f"{nombre_final}.jpg",
+                        label="🖼️ Descargar como JPEG (Fondo blanco, calidad 100)",
+                        data=file_jpeg,
+                        file_name=f"{nombre_final}.jpeg",
                         mime="image/jpeg",
                         use_container_width=True
                     )
             except Exception as ex:
-                st.error(f"No se pudo preparar la versión JPG: {ex}")
+                st.error(f"No se pudo preparar la versión JPEG: {ex}")
 
         st.markdown("---")
         
