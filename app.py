@@ -77,9 +77,9 @@ if archivo_subido is not None:
     else:
         st.success(f"¡Extracción exitosa! Se encontraron {len(image_records)} imágenes originales.")
 
-        # Selector de imágenes limpio
+        # Selector de imágenes limpio y corregido
         opciones = [
-            (i, f"Página {r['pagina']} — Imagen {i+1} ({r['anc']}×{r['alto']} px) — Formato: {r['extension'].upper()}" if "anc" in r else (i, f"Página {r['pagina']} — Imagen {i+1} ({r['ancho']}×{r['alto']} px) — Formato: {r['extension'].upper()}"))
+            (i, f"Página {r['pagina']} — Imagen {i+1} ({r['ancho']}×{r['alto']} px) — Formato: {r['extension'].upper()}")
             for i, r in enumerate(image_records)
         ]
         
@@ -104,7 +104,7 @@ if archivo_subido is not None:
         with col2:
             st.markdown("### Opciones de Descarga y Personalización")
             
-            # Campo de texto directo con clave única por imagen (sin formularios molestos)
+            # Campo de texto directo con clave única por imagen
             key_nombre = f"nombre_img_{seleccion_idx}"
             if key_nombre not in st.session_state:
                 st.session_state[key_nombre] = f"imagen_pag_{r['pagina']}"
