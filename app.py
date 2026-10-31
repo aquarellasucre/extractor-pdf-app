@@ -69,6 +69,7 @@ if archivo_subido is not None:
             
             st.session_state["image_records"] = image_records
             st.session_state["pdf_name"] = archivo_subido.name
+            st.session_state.pop("nombre_fijado_activo", None)
 
     image_records = st.session_state.get("image_records", [])
 
@@ -77,7 +78,7 @@ if archivo_subido is not None:
     else:
         st.success(f"¡Extracción exitosa! Se encontraron {len(image_records)} imágenes originales.")
 
-        # Selector de imágenes limpio y corregido
+        # Selector de imágenes limpio
         opciones = [
             (i, f"Página {r['pagina']} — Imagen {i+1} ({r['ancho']}×{r['alto']} px) — Formato: {r['extension'].upper()}")
             for i, r in enumerate(image_records)
@@ -104,19 +105,26 @@ if archivo_subido is not None:
         with col2:
             st.markdown("### Opciones de Descarga y Personalización")
             
-            # Campo de texto directo con clave única por imagen
-            key_nombre = f"nombre_img_{seleccion_idx}"
-            if key_nombre not in st.session_state:
-                st.session_state[key_nombre] = f"imagen_pag_{r['pagina']}"
+            # Control de estado para el nombre fijado por cada imagen
+            key_input = f"input_nombre_{seleccion_idx}"
+            key_fijado = f"fijado_{seleccion_idx}"
+            
+            if key_input not in st.session_state:
+                st.session_state[key_input] = f"imagen_pag_{r['pagina']}"
+            if key_fijado not in st.session_state:
+                st.session_state[key_fijado] = f"imagen_pag_{r['pagina']}"
 
-            nombre_input = st.text_input(
-                "Nombre para el archivo (sin extensión):", 
-                key=key_nombre
-            )
+            # Caja de texto y botón de fijar fuera de un st.form
+            nombre_input = st.text_input("Nombre para el archivo (sin extensión):", key=key_input)
+            
+            if st.button("💾 Fijar este nombre", use_container_width=True):
+                st.session_state[key_fijado] = nombre_input
+                st.rerun()
 
-            nombre_final = nombre_input.strip() if nombre_input else "imagen"
+            nombre_final = st.session_state[key_fijado].strip() if st.session_state[key_fijado] else "imagen"
+            st.info(f"Nombre activo para descarga: **{nombre_final}**")
 
-            # 1. Camino 1: Descargar el archivo ORIGINAL
+            # 1. Camino 1: Descargar el archivo ORIGINAL con el nombre fijado
             nombre_con_extension = f"{nombre_final}.{r['extension']}"
             st.download_button(
                 label=f"📥 1. Descargar Original ({r['extension'].upper()})",
@@ -126,7 +134,7 @@ if archivo_subido is not None:
                 use_container_width=True
             )
 
-            # 2. Camino 2: Descargar como JPEG con caché (Ultra rápido y al primer clic)
+            # 2. Camino 2: Descargar como JPEG con caché (Fondo blanco, calidad 100)
             jpeg_bytes = convertir_a_jpeg_optimizado(r["bytes"])
             if jpeg_bytes:
                 st.download_button(
@@ -143,14 +151,4 @@ if archivo_subido is not None:
         
         # 3. Camino 3: Descargar todas en ZIP
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
-            for idx, rec in enumerate(image_records, 1):
-                zf.writestr(f"imagen_{idx:04d}.{rec['extension']}", rec["bytes"])
-        
-        st.download_button(
-            label="📦 3. Descargar todas las imágenes originales en un archivo ZIP",
-            data=zip_buffer.getvalue(),
-            file_name="imagenes_originales_pdf.zip",
-            mime="application/zip",
-            use_container_width=True
-        )
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DE
